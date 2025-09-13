@@ -6,8 +6,6 @@ Follow the steps below to set up and run the project. (Example)
 
 ## 📦 Requirements
 Node.js v18+
-- Example: Python 3.10
-- Example: Docker
 
 ---
 
