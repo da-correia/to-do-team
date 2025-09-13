@@ -1,8 +1,11 @@
+from app import models
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from ..deps import get_current_user
 from ..database import get_db
 from .. import crud, schemas
+from typing import Optional
+from datetime import datetime
 
 router = APIRouter(prefix="/debts", tags=["debts"])
 
@@ -16,13 +19,46 @@ def create_debt(debt_in: schemas.DebtCreate, db: Session = Depends(get_db), user
     return out_obj
 
 @router.post("/{debt_id}/payments", response_model=schemas.PaymentRead)
-def add_payment(debt_id: int, payment_in: schemas.PaymentCreate, db: Session = Depends(get_db), user = Depends(get_current_user)):
-    debt = db.query(models.Debt).filter(models.Debt.id == debt_id, models.Debt.user_id == user.id).first()
+def add_payment(
+    debt_id: int,
+    payment_in: schemas.PaymentCreate,
+    plan_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user)
+):
+    # 1. Get the debt and verify ownership
+    debt = db.query(models.Debt).filter(
+        models.Debt.debt_id == debt_id,
+        models.Debt.user_id == user.user_id
+    ).first()
     if not debt:
-        raise HTTPException(404, "Debt not found")
-    # Optional business rule: don't allow payment > outstanding
-    _, outstanding = crud.get_debt_with_outstanding(db, debt_id)
-    if payment_in.amount > outstanding:
-        raise HTTPException(400, "Payment exceeds outstanding amount")
-    p = crud.add_payment(db, debt_id, payment_in.amount)
-    return p
+        raise HTTPException(status_code=404, detail="Debt not found")
+
+    # 2. If plan_id is provided, verify it exists and belongs to user
+    plan = None
+    if plan_id:
+        plan = db.query(models.RepaymentPlan).filter(
+            models.RepaymentPlan.plan_id == plan_id,
+            models.RepaymentPlan.user_id == user.user_id
+        ).first()
+        if not plan:
+            raise HTTPException(status_code=404, detail="Repayment plan not found")
+
+    # 3. Create the payment
+    new_payment = models.Payment(
+        debt_id=debt.debt_id,
+        plan_id=plan.plan_id if plan else None,
+        amount=payment_in.amount,
+        payment_date=payment_in.payment_date or datetime.utcnow(),
+        status=payment_in.status,
+        note=getattr(payment_in, "note", None)
+    )
+
+    db.add(new_payment)
+    db.commit()
+    db.refresh(new_payment)
+
+    # 4. Optionally, update debt balance or status
+    # You could sum payments and mark debt as settled if balance <= 0
+
+    return new_payment
