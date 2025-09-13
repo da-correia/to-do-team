@@ -11,11 +11,11 @@ router = APIRouter(prefix="/debts", tags=["debts"])
 
 @router.post("/", response_model=schemas.DebtRead)
 def create_debt(debt_in: schemas.DebtCreate, db: Session = Depends(get_db), user = Depends(get_current_user)):
-    d = crud.create_debt(db, user.id, debt_in)
+    d = crud.create_debt(db, user.user_id, debt_in)
     # compute outstanding
-    _, outstanding = crud.get_debt_with_outstanding(db, d.id)
+    _, outstanding = crud.get_debt_with_outstanding(db, d.debt_id)
     out_obj = schemas.DebtRead.from_orm(d)
-    out_obj.outstanding = outstanding
+    out_obj.balance = outstanding
     return out_obj
 
 @router.post("/{debt_id}/payments", response_model=schemas.PaymentRead)
@@ -50,8 +50,7 @@ def add_payment(
         plan_id=plan.plan_id if plan else None,
         amount=payment_in.amount,
         payment_date=payment_in.payment_date or datetime.utcnow(),
-        status=payment_in.status,
-        note=getattr(payment_in, "note", None)
+        status=payment_in.status
     )
 
     db.add(new_payment)

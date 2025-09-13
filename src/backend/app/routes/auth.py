@@ -25,12 +25,12 @@ def login(
     db: Session = Depends(get_db)
 ):
     user = crud.get_user_by_email(db, form_data.username)  # email
-    if not user or not verify_password(form_data.password, user.password):
+    if not user or not auth.verify_password(form_data.password, user.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    access_token = create_access_token(data={"sub": user.email})
+    access_token = auth.create_access_token(data={"sub": user.email})
     return {"access_token": access_token, "token_type": "bearer"}

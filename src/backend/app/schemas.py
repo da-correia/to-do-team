@@ -35,7 +35,7 @@ class UserRead(UserBase):
     level: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # -------------------
 # Debt Schemas
@@ -52,7 +52,7 @@ class DebtRead(DebtCreate):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # -------------------
 # RepaymentPlan Schemas
@@ -72,7 +72,7 @@ class RepaymentPlanOut(RepaymentPlanBase):
     user_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # -------------------
 # Payment Schemas
@@ -92,7 +92,7 @@ class PaymentRead(PaymentBase):
     plan_id: Optional[int]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # -------------------
 # Badge Schemas
@@ -109,7 +109,7 @@ class BadgeOut(BadgeBase):
     badge_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # -------------------
 # UserBadge Schemas
@@ -127,4 +127,4 @@ class UserBadgeOut(UserBadgeBase):
     badge_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True

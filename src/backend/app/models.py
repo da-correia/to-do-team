@@ -1,9 +1,8 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Numeric, Enum
 from sqlalchemy.orm import relationship, declarative_base
+from .database import Base
 from datetime import datetime
 import enum
-
-Base = declarative_base()
 
 # Enum for repayment plan strategy
 class StrategyEnum(str, enum.Enum):

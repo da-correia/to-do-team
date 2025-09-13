@@ -19,18 +19,17 @@ def create_person(db: Session, user_id: int, name: str, contact: str | None):
 
 def create_debt(db: Session, user_id: int, debt_in: schemas.DebtCreate):
     d = models.Debt(user_id=user_id,
-                    person_id=debt_in.person_id,
-                    principal=debt_in.principal,
-                    currency=debt_in.currency,
-                    description=debt_in.description,
-                    due_date=debt_in.due_date)
+                    debt_name=debt_in.debt_name,
+                    balance=debt_in.balance,
+                    interest_rate=debt_in.interest_rate,
+                    minimum_payment=debt_in.minimum_payment)
     db.add(d); db.commit(); db.refresh(d); return d
 
 def get_debt_with_outstanding(db: Session, debt_id: int):
-    debt = db.query(models.Debt).filter(models.Debt.id == debt_id).first()
+    debt = db.query(models.Debt).filter(models.Debt.debt_id == debt_id).first()
     if not debt: return None
-    paid = db.query(func.coalesce(func.sum(models.Payment.amount), 0)).filter(models.Payment.debt_id == debt.id).scalar()
-    outstanding = Decimal(debt.principal) - Decimal(paid)
+    paid = db.query(func.coalesce(func.sum(models.Payment.amount), 0)).filter(models.Payment.debt_id == debt.debt_id).scalar()
+    outstanding = Decimal(debt.balance) - Decimal(paid)
     return debt, outstanding
 
 def add_payment(db: Session, debt_id: int, amount):
@@ -39,10 +38,10 @@ def add_payment(db: Session, debt_id: int, amount):
     db.commit()
     db.refresh(payment)
     # Optionally, mark debt settled if outstanding <= 0
-    debt = db.query(models.Debt).filter(models.Debt.id == debt_id).first()
-    paid = db.query(func.coalesce(func.sum(models.Payment.amount), 0)).filter(models.Payment.debt_id == debt.id).scalar()
+    debt = db.query(models.Debt).filter(models.Debt.debt_id == debt_id).first()
+    paid = db.query(func.coalesce(func.sum(models.Payment.amount), 0)).filter(models.Payment.debt_id == debt.debt_id).scalar()
     from decimal import Decimal
-    if Decimal(debt.principal) - Decimal(paid) <= 0:
+    if Decimal(debt.balance) - Decimal(paid) <= 0:
         debt.is_settled = True
         db.add(debt); db.commit()
     return payment
