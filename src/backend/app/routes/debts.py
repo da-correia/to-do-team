@@ -14,7 +14,7 @@ def get_my_debts(db: Session = Depends(get_db), user: models.User = Depends(get_
     debts = crud.get_debts_by_user(db, user.user_id)
     return debts
 
-@router.post("/", response_model=schemas.DebtRead)
+@router.post("", response_model=schemas.DebtRead)
 def create_debt(debt_in: schemas.DebtCreate, db: Session = Depends(get_db), user = Depends(get_current_user)):
     d = crud.create_debt(db, user.user_id, debt_in)
     # compute outstanding
