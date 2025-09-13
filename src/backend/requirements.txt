@@ -1,8 +1,10 @@
 fastapi
+uvicorn[standard]
 SQLAlchemy>=1.4
-python-jose
+python-jose[crytography]
 passlib[bcrypt]
 python-dotenv
-pydantic
+pydantic[email]
 pytest
+python-multipart
 httpx
