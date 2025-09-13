@@ -1,7 +1,7 @@
 import { supabase } from "../supabaseClient";
 
 export const userService = {
-  getUserById: async (userId) => {
+  getUserById: async (userId: any) => {
     const { data, error } = await supabase
       .from("users")
       .select("*")
