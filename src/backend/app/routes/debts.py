@@ -4,10 +4,15 @@ from sqlalchemy.orm import Session
 from ..deps import get_current_user
 from ..database import get_db
 from .. import crud, schemas
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 
 router = APIRouter(prefix="/debts", tags=["debts"])
+
+@router.get("", response_model=List[schemas.DebtRead])
+def get_my_debts(db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
+    debts = crud.get_debts_by_user(db, user.user_id)
+    return debts
 
 @router.post("/", response_model=schemas.DebtRead)
 def create_debt(debt_in: schemas.DebtCreate, db: Session = Depends(get_db), user = Depends(get_current_user)):

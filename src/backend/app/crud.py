@@ -13,6 +13,12 @@ def create_user(db: Session, name: str, email: str, password_hashed: str):
     db.refresh(user)
     return user
 
+def get_debts_by_user(db: Session, user_id: int):
+    """
+    Return all debts for a given user.
+    """
+    return db.query(models.Debt).filter(models.Debt.user_id == user_id).all()
+
 def create_person(db: Session, user_id: int, name: str, contact: str | None):
     p = models.Person(user_id=user_id, name=name, contact=contact)
     db.add(p); db.commit(); db.refresh(p); return p
