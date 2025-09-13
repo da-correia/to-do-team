@@ -1,42 +1,44 @@
 import { supabase } from "./supabaseClient";
 
 export const debtService = {
-  // Get all debts for a user
-  getDebts: async (user_id) => {
+  // Get all debts for the authenticated user
+  getDebts: async (userId) => {
     const { data, error } = await supabase
     .from("debt")
     .select("*")
-    .eq("user_id", user_id);
+    .eq("user_id", userId);
     if (error) throw error;
     return data;
   },
 
-  // Create a new debt
-  createDebt: async (debt) => {
+  // Create a new debt for the authenticated user
+  createDebt: async (userId, debt) => {
     const { data, error } = await supabase
     .from("debt")
-    .insert([debt]);
+    .insert([{ ...debt, user_id: userId }]);
     if (error) throw error;
     return data;
   },
 
-  // Update an existing debt
-  updateDebt: async (id, updates) => {
+  // Update a debt (must belong to the user)
+  updateDebt: async (userId, id, updates) => {
     updates.updated_at = new Date().toISOString();
     const { data, error } = await supabase
     .from("debt")
     .update(updates)
-    .eq("id", id);
+    .eq("id", id)
+    .eq("user_id", userId);
     if (error) throw error;
     return data;
   },
 
-  // Delete a debt
-  deleteDebt: async (id) => {
+  // Delete a debt (must belong to the user)
+  deleteDebt: async (userId, id) => {
     const { data, error } = await supabase
     .from("debt")
     .delete()
-    .eq("id", id);
+    .eq("id", id)
+    .eq("user_id", userId);
     if (error) throw error;
     return data;
   }
