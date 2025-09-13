@@ -13,7 +13,7 @@ It's a tongue-in-cheek name that every developer can relate to in some way.
 |----------|---------------------|-----------------------| -------------------|-------------|
 | Daniel Alexander Correia   | Backend Developer   | University of South Africa | dacorreia. | danny.al.correia@gmail.com |
 | Hope Tsunke   | Frontend Developer  | University of South Africa | fly_boy2678 | ttsunke15@gmail.com |
-| Tony Lapuken | Quality Assurance | University of South Africa | lord_forkbeard | tonylapuken@gmail.com |
+| Tony Lapuken | Quality Assurance | North-West University | lord_forkbeard | tonylapuken@gmail.com |
 
 ## 🏫 Institution
 ``` c
