@@ -9,6 +9,7 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
+
 import {
   Select,
   SelectTrigger,
@@ -16,10 +17,12 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import CustomLoader from "@/components/CustomLoader";
+import { authService } from "@/lib/services/authService";
 
 interface PlanSummary {
   totalBalance: number;
@@ -47,7 +50,9 @@ const RepaymentPlanPage: React.FC = () => {
   const fetchSummary = async () => {
     setLoading(true);
     try {
-      const data = await RepaymentPlanService.getPlanSummary('6382e9ca-9d30-438d-9530-87aea3353d38', daysFilter, {
+      const user = await authService.getCurrentUser();
+
+      const data = await RepaymentPlanService.getPlanSummary(user?.id as string, daysFilter, {
         type: typeFilter,
       });
 
