@@ -1,16 +1,13 @@
-> *This document serves as a template for you to write a **brief overview** of your project.*
-
 # Project Overview
 
 ## 🎯 Project Name
 ``` c
-// TODO: Enter your project name here
+// TODO: Debt Manager
 ```
 
 ## 🚀 Summary
 ``` c
-// TODO: Write a short, high-level description of your
-// project (2–3 sentences).
+The app allows you to add your debts to a list, work out a repayment plan that suits you and keep track of payments that you have made.
 ```
 
 ## ✨ Key Features

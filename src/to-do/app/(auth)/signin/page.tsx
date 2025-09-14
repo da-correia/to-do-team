@@ -20,6 +20,9 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 const signinSchema = z.object({
   email: z.string().email("Invalid email"),
@@ -28,6 +31,9 @@ const signinSchema = z.object({
 
 const SignInPage = () => {
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const { signIn, signInWithGoogle } = useAuth();
+  const router = useRouter();
 
   const form = useForm<z.infer<typeof signinSchema>>({
     resolver: zodResolver(signinSchema),
@@ -39,7 +45,36 @@ const SignInPage = () => {
 
   const onSubmit = async (data: z.infer<typeof signinSchema>) => {
     setError(null);
-    console.log(data);
+    setLoading(true);
+
+    try {
+      await signIn(data.email, data.password);
+      router.push("/dashboard");
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "An error occurred during signin";
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setError(null);
+    setLoading(true);
+
+    try {
+      await signInWithGoogle();
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "An error occurred during Google signin";
+      setError(errorMessage);
+      setLoading(false);
+    }
   };
 
   return (
@@ -87,18 +122,26 @@ const SignInPage = () => {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full">
-                Log In
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Signing In..." : "Log In"}
               </Button>
             </form>
           </Form>
           {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-          <Button variant="outline" type="submit" className="mt-3 w-full">
-            Log In with Google
+          <Button
+            variant="outline"
+            type="button"
+            className="mt-3 w-full"
+            onClick={handleGoogleSignIn}
+            disabled={loading}
+          >
+            {loading ? "Signing in..." : "Log In with Google"}
           </Button>
           <p className="text-sm text-center mt-4">
-            Don&apos;t have an account?
-            <span className="underline cursor-pointer">Sign Up</span>{" "}
+            Don&apos;t have an account?{" "}
+            <Link href="/signup" className="underline cursor-pointer">
+              Sign Up
+            </Link>
           </p>
         </CardContent>
       </Card>
@@ -107,3 +150,4 @@ const SignInPage = () => {
 };
 
 export default SignInPage;
+

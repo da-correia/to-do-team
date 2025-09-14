@@ -9,7 +9,7 @@
 ```
 ``` bash
 # Example
-npm start
+npm run dev
 ```
 
 ## 🖥️ How to Use

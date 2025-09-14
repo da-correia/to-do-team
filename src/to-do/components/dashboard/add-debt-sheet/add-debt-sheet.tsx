@@ -21,26 +21,53 @@ import {
   SheetFooter,
 } from "@/components/ui/sheet";
 import React from "react";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectItem,
+  SelectContent,
+  SelectGroup,
+} from "@/components/ui/select";
+import { debtService } from "@/lib/services/debtService";
 
 const createDebtSchema = z.object({
   debt_name: z.string().min(1, "Field cannot be empty"),
-  balance: z.number().min(1, "Field is required"),
-  interest_rate: z.number().min(1, ""),
-  minimum_payment: z.number().min(1, ""),
+  type: z.string().min(1, "Field cannot be empty"),
+  balance: z.string().min(1, "Balance must be a positive number"),
+  interest_rate: z.string().min(1, "Interest rate must be a positive number"),
+  minimum_payment: z
+    .string()
+    .min(1, "Minimum payment must be a positive number"),
 });
 
 const AddDebtSheet = () => {
-  const form = useForm({
+  const form = useForm<z.infer<typeof createDebtSchema>>({
     resolver: zodResolver(createDebtSchema),
     defaultValues: {
       debt_name: "",
-      balance: 0,
-      interest_rate: 0,
-      minimum_payment: 0,
+      type: "",
+      balance: "",
+      interest_rate: "",
+      minimum_payment: "",
     },
   });
-  const onSubmit = (data) => {
-    console.log(data);
+  const onSubmit = async (data: z.infer<typeof createDebtSchema>) => {
+    try {
+      await debtService.create({
+        debt_name: data.debt_name,
+        type: data.type,
+        balance: parseFloat(data.balance),
+        interest_rate: parseFloat(data.interest_rate),
+        minimum_payment: parseFloat(data.minimum_payment),
+        due_date: new Date(),
+      });
+      // Reset form after successful creation
+      form.reset();
+      // You could also close the sheet here if you have access to the close function
+    } catch (error) {
+      console.error("Error creating debt:", error);
+    }
   };
   return (
     <SheetContent>
@@ -52,16 +79,16 @@ const AddDebtSheet = () => {
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="w-full space-y-6 text-left"
+          className="w-full space-y-6 text-left px-2"
         >
           <FormField
             control={form.control}
-            name="first_name"
+            name="debt_name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>First Name</FormLabel>
+                <FormLabel>Debt Name</FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter your first name" {...field} />
+                  <Input placeholder="Enter your debt name" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -69,12 +96,30 @@ const AddDebtSheet = () => {
           />
           <FormField
             control={form.control}
-            name="last_name"
+            name="type"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Last Name</FormLabel>
+                <FormLabel>Dept Type</FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter your last name" {...field} />
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectItem value="credit_card">Credit Card</SelectItem>
+                        <SelectItem value="personal_loan">
+                          Personal Loan
+                        </SelectItem>
+                        <SelectItem value="mortgage">Mortgage</SelectItem>
+                        <SelectItem value="student_loan">
+                          Student Loan
+                        </SelectItem>
+                        <SelectItem value="auto_loan">Auto Loan</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -82,23 +127,48 @@ const AddDebtSheet = () => {
           />
           <FormField
             control={form.control}
-            name="email"
+            name="balance"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
+                <FormLabel>Balance</FormLabel>
                 <FormControl>
-                  <Input placeholder="example@gmail.com" {...field} />
+                  <Input placeholder="0" type="number" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          <Button>Save changes</Button>
+          <FormField
+            control={form.control}
+            name="interest_rate"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Interest Rate</FormLabel>
+                <FormControl>
+                  <Input placeholder="0%" type="number" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="minimum_payment"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Minimum Payment</FormLabel>
+                <FormControl>
+                  <Input placeholder="0" type="number" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <Button type="submit">Add Debt</Button>
         </form>
       </Form>
       {/*Sheet Footer*/}
       <SheetFooter>
-        <Button type="submit">Add Debt</Button>
         <SheetClose asChild>
           <Button variant="outline">Cancel</Button>
         </SheetClose>
