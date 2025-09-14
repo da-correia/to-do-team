@@ -1,3 +1,4 @@
+import { wordsToSnake } from "@/utils/util";
 import { supabase } from "../supabaseClient";
 
 interface DebtFilter {
@@ -11,7 +12,11 @@ interface DebtFilter {
 export const RepaymentPlanService = {
 
     // Gets The Plan
-    getPlanSummary: async (userId: string, projectionDays = 30, filter: DebtFilter = {}) => {
+    getPlanSummary: async (
+        userId: string,
+        projectionDays = 30,
+        filter: DebtFilter = {}
+    ) => {
         let query = supabase
             .from("debt")
             .select("id, balance, interest_rate, minimum_payment, type, due_date")
@@ -19,21 +24,21 @@ export const RepaymentPlanService = {
             .eq("is_active", true);
 
         // Apply optional filters
-        if (filter.type) query = query.eq("type", filter.type);
+        if (filter.type && filter.type !== "All") {
+            query = query.eq("type", wordsToSnake(filter.type));
+        }
         if (filter.minBalance !== undefined) query = query.gte("balance", filter.minBalance);
         if (filter.maxBalance !== undefined) query = query.lte("balance", filter.maxBalance);
         if (filter.dueBefore) query = query.lte("due_date", filter.dueBefore.toISOString().split("T")[0]);
         if (filter.dueAfter) query = query.gte("due_date", filter.dueAfter.toISOString().split("T")[0]);
 
         const { data: debts, error: debtError } = await query;
-
         if (debtError) throw debtError;
 
         const { data: payments, error: paymentError } = await supabase
             .from("payment")
             .select("id, debt_id, amount, payment_date")
-            .in("debt_id", debts.map(d => d.id));
-
+            .in("debt_id", debts.map((d) => d.id));
         if (paymentError) throw paymentError;
 
         const now = new Date();
@@ -41,14 +46,14 @@ export const RepaymentPlanService = {
 
         // --- Past payments ---
         const pastPayments = payments
-            .filter(p => new Date(p.payment_date) <= now)
+            .filter((p) => new Date(p.payment_date) <= now)
             .reduce((sum, p) => sum + Number(p.amount), 0);
 
         // --- Future projection for the next N days ---
         let projectedFuturePayments = 0;
         let projectedInterest = 0;
 
-        debts.forEach(d => {
+        debts.forEach((d) => {
             const balance = Number(d.balance);
             const minPayment = Number(d.minimum_payment) || 0;
             const monthlyRate = Number(d.interest_rate) / 100 / 12;
@@ -85,22 +90,30 @@ export const RepaymentPlanService = {
             projectionStart: now.toISOString().split("T")[0],
             projectionEnd: projectionEnd.toISOString().split("T")[0],
             projectionDays,
-            totalDebts: debts.length
+            totalDebts: debts.length,
         };
     },
 
-    // Get distinct debt types
     getDebtType: async (): Promise<string[]> => {
+        // Get current user
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) throw new Error("User not authenticated");
+
         const { data, error } = await supabase
             .from("debt")
             .select("type", { count: "exact", head: false }) // select type column
-            .neq("type", null); // exclude null types
+            .neq("type", null) // exclude null types
+            .eq("user_id", user.id); // filter by current user
 
         if (error) throw error;
 
         // Extract unique types
-        const uniqueTypes = Array.from(new Set(data?.map(d => d.type) || []));
+        const uniqueTypes = Array.from(new Set(data?.map((d) => d.type) || []));
         return uniqueTypes;
     },
+
 
 };
