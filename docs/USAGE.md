@@ -1,35 +1,30 @@
-> *This document serves as a template for you to write **usage** instructions for your project.* 
-
 # Usage Guide
 
 ## ▶️ Running the Application
-``` c
-// TODO: Explain how to launch the project.
-// Add commands or steps here.
-```
+Be sure to be in correct directory with
 ``` bash
-# Example
+cd to-do-team/src/app/to-do
+```
+
+and then
+
+``` bash
 npm run dev
 ```
 
 ## 🖥️ How to Use
-``` c
-// TODO: Provide step-by-step usage instructions for judges/users.
-```
-1. Step 1 -> Do this
-2. Step 2 -> Then this
-3. Step 3 -> See the output/result
+
+1. From the landing page, make sure to sign up using an actual email address.
+   This is of utmost importance since we are using SupaBase Auth to authenticate users,
+   and they will receive an email to verify their user account. 
+2. Once that is created and you have successfully signed in, you can then begin testing
+   the functionality of our app by adding some debts in the Debts page, get an overview of your financial situation on the Repayment plans page and more.
 
 ## 🎥 Demo
-``` c
-// TODO: Link your demo video and PowerPoint here
-```
+
 Check out the Demos: 
 - [Demo Video](../demo/demo.mp4)
 - [Demo Presentation](../demo/demo.pptx)
 
 ## 📌 Notes
-``` c
-// TODO: Add any special instructions, caveats, or tips
-// for using your project.
-```
+
