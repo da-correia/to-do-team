@@ -79,13 +79,18 @@ export const debtService = {
     console.log("Current user:", user);
     if (!user) throw new Error("User not authenticated");
 
+    const today = new Date().toISOString().split("T")[0];
+    const next7Days = new Date();
+    next7Days.setDate(next7Days.getDate() + 7);
+    const next7DaysStr = next7Days.toISOString().split("T")[0];
+
     const { data, error } = await supabase
-    .from("debt")
-    .select("*")
-    .eq("user_id", user.id)
-    .gte("due_date", today)
-    .lte("due_date", next7DaysStr)
-    .order("due_date", { ascending: true });
+      .from("debt")
+      .select("*")
+      .eq("user_id", user.id)
+      .gte("due_date", today)
+      .lte("due_date", next7DaysStr)
+      .order("due_date", { ascending: true });
 
     if (error) throw error;
     return data;
@@ -137,3 +142,4 @@ export const debtService = {
     return data;
   },
 };
+
