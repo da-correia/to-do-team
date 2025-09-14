@@ -14,12 +14,15 @@ Node.js v18+
 # Clone the repository
 git clone https://github.com/da-correia/to-do-team.git
 
-# Install dependencies
+# Navigate to project folder
 cd to-do-team/src/app/to-do
-npm i
+
+# Install dependencies
+npm install
 ```
 
 ## ▶️ Running the Project
+Be sure you're inside the correct working directory mentioned above: `to-do-team/src/app/to-do` and then run with the command:
 ``` bash
 npm run dev
 ```
