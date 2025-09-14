@@ -83,11 +83,8 @@ export const debtService = {
       .gte("due_date", today)
       .lte("due_date", next7DaysStr)
       .order("due_date", { ascending: true });
-<<<<<<< HEAD
-=======
 
     if (error) throw new Error(error.message);
->>>>>>> 5c5c2df935ffa6332f829372d0e9cab3719cfc2f
 
     return data;
   },
