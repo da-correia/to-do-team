@@ -48,9 +48,12 @@ export function DebtTable({
     }).format(amount);
   };
 
-  const formatDate = (date: Date | null) => {
+  const formatDate = (date: Date | string | null) => {
     if (!date) return "N/A";
-    return new Date(date).toLocaleDateString();
+    const d = typeof date === "string" ? new Date(date) : date;
+    return d instanceof Date && !isNaN(d.getTime())
+      ? d.toLocaleDateString()
+      : "N/A";
   };
 
   const getTypeLabel = (type: string | null) => {
@@ -117,7 +120,7 @@ export function DebtTable({
             className="cursor-pointer hover:bg-muted/50"
             onClick={() => onSort("due_date")}
           >
-            Due Date{" "}
+            Start Date{" "}
             {sortBy === "due_date" && (sortOrder === "asc" ? "↑" : "↓")}
           </TableHead>
           <TableHead>Actions</TableHead>
@@ -160,3 +163,4 @@ export function DebtTable({
     </Table>
   );
 }
+

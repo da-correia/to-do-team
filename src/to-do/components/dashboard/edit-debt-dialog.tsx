@@ -29,7 +29,7 @@ import { Debt } from "@/lib/services/debtService";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const DEBT_TYPES = [
   { value: "credit_card", label: "Credit Card" },
@@ -46,6 +46,7 @@ const editDebtSchema = z.object({
   balance: z.string().min(1, "Balance is required"),
   interest_rate: z.string().min(1, "Interest rate is required"),
   minimum_payment: z.string().min(1, "Minimum payment is required"),
+  due_date: z.string().optional(),
 });
 
 interface EditDebtDialogProps {
@@ -58,6 +59,7 @@ interface EditDebtDialogProps {
     balance: number;
     interest_rate: number;
     minimum_payment: number;
+    due_date?: Date;
   }) => Promise<void>;
 }
 
@@ -67,6 +69,10 @@ export function EditDebtDialog({
   debt,
   onSave,
 }: EditDebtDialogProps) {
+  const [selectedDate, setSelectedDate] = useState<string>(
+    new Date().toISOString().split("T")[0]
+  );
+
   const form = useForm<z.infer<typeof editDebtSchema>>({
     resolver: zodResolver(editDebtSchema),
     defaultValues: {
@@ -75,6 +81,7 @@ export function EditDebtDialog({
       balance: "",
       interest_rate: "",
       minimum_payment: "",
+      due_date: selectedDate,
     },
   });
 
@@ -86,7 +93,15 @@ export function EditDebtDialog({
         balance: debt.balance?.toString() || "",
         interest_rate: debt.interest_rate?.toString() || "",
         minimum_payment: debt.minimum_payment?.toString() || "",
+        due_date: debt.due_date
+          ? new Date(debt.due_date).toISOString().split("T")[0]
+          : selectedDate,
       });
+      setSelectedDate(
+        debt.due_date
+          ? new Date(debt.due_date).toISOString().split("T")[0]
+          : selectedDate
+      );
     }
   }, [debt, form]);
 
@@ -98,6 +113,7 @@ export function EditDebtDialog({
         balance: parseFloat(data.balance),
         interest_rate: parseFloat(data.interest_rate),
         minimum_payment: parseFloat(data.minimum_payment),
+        due_date: selectedDate ? new Date(selectedDate) : undefined,
       });
       onOpenChange(false);
       form.reset();
@@ -122,6 +138,7 @@ export function EditDebtDialog({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* Debt Name */}
             <FormField
               control={form.control}
               name="debt_name"
@@ -135,6 +152,8 @@ export function EditDebtDialog({
                 </FormItem>
               )}
             />
+
+            {/* Debt Type */}
             <FormField
               control={form.control}
               name="type"
@@ -159,6 +178,8 @@ export function EditDebtDialog({
                 </FormItem>
               )}
             />
+
+            {/* Balance */}
             <FormField
               control={form.control}
               name="balance"
@@ -166,17 +187,14 @@ export function EditDebtDialog({
                 <FormItem>
                   <FormLabel>Balance</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="0"
-                      type="number"
-                      step="0.01"
-                      {...field}
-                    />
+                    <Input placeholder="0" type="number" step="0.01" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
+            {/* Interest Rate */}
             <FormField
               control={form.control}
               name="interest_rate"
@@ -184,17 +202,14 @@ export function EditDebtDialog({
                 <FormItem>
                   <FormLabel>Interest Rate (%)</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="0"
-                      type="number"
-                      step="0.01"
-                      {...field}
-                    />
+                    <Input placeholder="0" type="number" step="0.01" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
+            {/* Minimum Payment */}
             <FormField
               control={form.control}
               name="minimum_payment"
@@ -202,17 +217,25 @@ export function EditDebtDialog({
                 <FormItem>
                   <FormLabel>Minimum Payment</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="0"
-                      type="number"
-                      step="0.01"
-                      {...field}
-                    />
+                    <Input placeholder="0" type="number" step="0.01" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
+            {/* Start Date / Due Date */}
+            <FormItem>
+              <FormLabel>Start Date</FormLabel>
+              <FormControl>
+                <Input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                />
+              </FormControl>
+            </FormItem>
+
             <DialogFooter>
               <Button type="button" variant="outline" onClick={handleCancel}>
                 Cancel
