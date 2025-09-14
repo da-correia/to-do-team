@@ -9,6 +9,7 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
+
 import {
   Select,
   SelectTrigger,
@@ -16,10 +17,14 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import CustomLoader from "@/components/CustomLoader";
+import { authService } from "@/lib/services/authService";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { snakeToWords } from "@/utils/util";
 
 interface PlanSummary {
   totalBalance: number;
@@ -47,14 +52,27 @@ const RepaymentPlanPage: React.FC = () => {
   const fetchSummary = async () => {
     setLoading(true);
     try {
-      const data = await RepaymentPlanService.getPlanSummary('6382e9ca-9d30-438d-9530-87aea3353d38', daysFilter, {
-        type: typeFilter,
-      });
+      const user = await authService.getCurrentUser();
 
-      const debtTypeData = await RepaymentPlanService.getDebtType();
+      const data = await RepaymentPlanService.getPlanSummary(
+        user?.id as string,
+        daysFilter,
+        {
+          type: typeFilter === "All" ? undefined : typeFilter, // send undefined for "All"
+        }
+      );
+
+      // Get debt types and include "All"
+      let debtTypeData = await RepaymentPlanService.getDebtType();
+      debtTypeData = [...debtTypeData, "All"];
+
+      // Sort alphabetically
+      debtTypeData.sort((a, b) => a.localeCompare(b));
+
+      // Convert camelCase to regular words
+      debtTypeData = debtTypeData.map((e) => snakeToWords(e));
 
       setDebtTypes(debtTypeData);
-
       setSummary(data);
     } catch (err: any) {
       setError(err.message || "Error fetching plan summary");
@@ -67,129 +85,132 @@ const RepaymentPlanPage: React.FC = () => {
     fetchSummary();
   }, []);
 
-
-  if(loading) return <CustomLoader/>;
+  if (loading) return <CustomLoader title="Repayment Summary" />;
 
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Repayment Plan Summary</h1>
-
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Label>Debt Type</Label>
-            <Select onValueChange={setTypeFilter} value={typeFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Any type" />
-              </SelectTrigger>
-              {debtTypes === null || debtTypes.length === 0 ? (
-                ""
-              ) : (
-                <SelectContent>
-                  {debtTypes!.map((dt) => (
-                    <SelectItem key={dt} value={dt}>
-                      {dt}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              )}
-            </Select>
-          </div>
-
-          <div>
-            <Label>Projection Days</Label>
-            <Input
-              type="number"
-              min={1}
-              value={daysFilter}
-              onChange={(e) => setDaysFilter(Number(e.target.value))}
-            />
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button onClick={fetchSummary}>Apply Filters</Button>
-        </CardFooter>
-      </Card>
-
-      {/* Loading/Error */}
-      {loading && (
+    <ProtectedRoute>
+      <div className="p-6 space-y-6">
+        <h1 className="text-2xl font-bold">Repayment Plan Summary</h1>
+        {/* Filters */}
         <Card>
-          <CardContent>Loading repayment plan...</CardContent>
-        </Card>
-      )}
-      {error && (
-        <Card>
-          <CardContent className="text-red-600">Error: {error}</CardContent>
-        </Card>
-      )}
-
-      {/* Summary */}
-      {summary && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Total Debts</CardTitle>
-            </CardHeader>
-            <CardContent>{summary.totalDebts}</CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Total Balance Now</CardTitle>
-            </CardHeader>
-            <CardContent>${summary.totalBalance.toLocaleString()}</CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                Projected Balance After {summary.projectionDays} Days
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              ${summary.projectedBalanceAfter.toLocaleString()}
-            </CardContent>
+          <CardHeader>
+            <CardTitle>Filters</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col md:flex-row gap-4 items-end">
+              <div className="flex-1">
+                <Label className="mb-2 block">Debt Type</Label>
+                <Select onValueChange={setTypeFilter} value={typeFilter}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Any type" />
+                  </SelectTrigger>
+                  {debtTypes && debtTypes.length > 0 && (
+                    <SelectContent>
+                      {debtTypes.map((dt) => (
+                        <SelectItem key={dt} value={dt}>
+                          {dt}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  )}
+                </Select>
+              </div>
+              <div className="flex-1">
+                <Label className="mb-2 block">Projection Days</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={daysFilter}
+                  onChange={(e) => setDaysFilter(Number(e.target.value))}
+                  className="w-full"
+                />
+              </div>
+              <Button className="mt-4 md:mt-0" onClick={fetchSummary}>
+                Apply Filters
+              </Button>
+            </div>
+          </CardContent>
+          {error && (
             <CardFooter>
-              Period: {summary.projectionStart} → {summary.projectionEnd}
+              <span className="text-red-600">Error: {error}</span>
             </CardFooter>
-          </Card>
+          )}
+        </Card>
+        {/* Loading */}
+        {loading && (
           <Card>
-            <CardHeader>
-              <CardTitle>Payments Made (Past)</CardTitle>
-            </CardHeader>
-            <CardContent>${summary.pastPayments.toLocaleString()}</CardContent>
+            <CardContent>Loading repayment plan...</CardContent>
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                Projected Payments (Next {summary.projectionDays} Days)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              ${summary.projectedFuturePayments.toLocaleString()}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                Estimated Interest (Next {summary.projectionDays} Days)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              ${summary.projectedInterest.toLocaleString()}
-            </CardContent>
-          </Card>
-          <Card className="col-span-full">
-            <CardHeader>
-              <CardTitle>Estimated Payoff</CardTitle>
-            </CardHeader>
-            <CardContent>{summary.payoffEstimate}</CardContent>
-          </Card>
-        </div>
-      )}
-    </div>
+        )}
+
+        {/* Summary */}
+        {summary && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Total Debts</CardTitle>
+              </CardHeader>
+              <CardContent>{summary.totalDebts}</CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Total Balance Now</CardTitle>
+              </CardHeader>
+              <CardContent>
+                ${summary.totalBalance.toLocaleString()}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>
+                  Projected Balance After {summary.projectionDays} Days
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                ${summary.projectedBalanceAfter.toLocaleString()}
+              </CardContent>
+              <CardFooter>
+                Period: {summary.projectionStart} → {summary.projectionEnd}
+              </CardFooter>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Payments Made (Past)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                ${summary.pastPayments.toLocaleString()}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>
+                  Projected Payments (Next {summary.projectionDays} Days)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                ${summary.projectedFuturePayments.toLocaleString()}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>
+                  Estimated Interest (Next {summary.projectionDays} Days)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                ${summary.projectedInterest.toLocaleString()}
+              </CardContent>
+            </Card>
+            <Card className="col-span-full">
+              <CardHeader>
+                <CardTitle>Estimated Payoff</CardTitle>
+              </CardHeader>
+              <CardContent>{summary.payoffEstimate}</CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
+    </ProtectedRoute>
   );
 };
 

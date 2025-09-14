@@ -17,6 +17,7 @@ import { DebtTable } from "@/components/dashboard/debt-table";
 import { EditDebtDialog } from "@/components/dashboard/edit-debt-dialog";
 import { DeleteDebtDialog } from "@/components/dashboard/delete-debt-dialog";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import CustomLoader from "@/components/CustomLoader";
 
 const DEBT_TYPES = [
   { value: "all", label: "All Types" },
@@ -93,15 +94,19 @@ const Debts = () => {
       updated_at: new Date().toISOString(),
     };
 
-    await debtService.update(editingDebt.id, updatedData);
+    try {
+      await debtService.update(editingDebt.id, updatedData);
 
-    setUserDebts((prevDebts) =>
-      prevDebts.map((debt) =>
-        debt.id === editingDebt.id ? { ...debt, ...updatedData } : debt
-      )
-    );
-
-    setEditingDebt(null);
+      // Reload debts from server
+      setLoading(true);
+      const debts = await debtService.getByUserId();
+      setUserDebts(debts || []);
+    } catch (err) {
+      console.error("Failed to update debt:", err);
+    } finally {
+      setEditingDebt(null);
+      setLoading(false);
+    }
   };
 
   const filteredAndSortedDebts = useMemo(() => {
@@ -147,88 +152,102 @@ const Debts = () => {
     }
   };
 
+  // Loader
+  if (loading) return <CustomLoader title="Debts" />;
+
   return (
     <ProtectedRoute>
       <>
-        <div className="flex w-full justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-semibold">Debts</h1>
-            <p className="text-muted-foreground">Manage your debts here</p>
-          </div>
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button>Add Debt</Button>
-            </SheetTrigger>
-            <AddDebtSheet />
-          </Sheet>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Debt Overview</CardTitle>
-            <div className="flex gap-4 mt-4">
-              <div className="flex-1">
-                <Input
-                  placeholder="Search debts..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="max-w-sm"
-                />
-              </div>
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Filter by type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {DEBT_TYPES.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+        <div className="p-6 space-y-6">
+          <h1 className="text-2xl font-bold">Debts</h1>
+          <div className="flex w-full justify-between mb-6">
+            <div>
+              <p className="text-muted-foreground">Manage your debts here</p>
             </div>
-          </CardHeader>
-          <CardContent>
-            {filteredAndSortedDebts.length === 0 && !loading ? (
-              <div className="flex justify-center items-center py-8">
-                <p className="text-muted-foreground">
-                  {userDebts.length === 0
-                    ? "No debts found. Add your first debt to get started."
-                    : "No debts match your current filters."}
-                </p>
-              </div>
-            ) : (
-              <DebtTable
-                debts={filteredAndSortedDebts}
-                sortBy={sortBy}
-                sortOrder={sortOrder}
-                onSort={handleSort}
-                onEdit={handleEditDebt}
-                onDelete={handleDeleteDebt}
-                loading={loading}
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button>Add Debt</Button>
+              </SheetTrigger>
+              <AddDebtSheet
+                onDebtAdded={async () => {
+                  setLoading(true);
+                  const debts = await debtService.getByUserId();
+                  setUserDebts(debts || []);
+                  setLoading(false);
+                }}
+                onClose={() => {}}
               />
-            )}
-          </CardContent>
-        </Card>
+            </Sheet>
+          </div>
 
-        <EditDebtDialog
-          open={editDialogOpen}
-          onOpenChange={setEditDialogOpen}
-          debt={editingDebt}
-          onSave={handleEditSave}
-        />
+          <Card>
+            <CardHeader>
+              <CardTitle>Debt Overview</CardTitle>
+              <div className="flex gap-4 mt-4">
+                <div className="flex-1">
+                  <Input
+                    placeholder="Search debts..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="max-w-sm"
+                  />
+                </div>
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filter by type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DEBT_TYPES.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {filteredAndSortedDebts.length === 0 && !loading ? (
+                <div className="flex justify-center items-center py-8">
+                  <p className="text-muted-foreground">
+                    {userDebts.length === 0
+                      ? "No debts found. Add your first debt to get started."
+                      : "No debts match your current filters."}
+                  </p>
+                </div>
+              ) : (
+                <DebtTable
+                  debts={filteredAndSortedDebts}
+                  sortBy={sortBy}
+                  sortOrder={sortOrder}
+                  onSort={handleSort}
+                  onEdit={handleEditDebt}
+                  onDelete={handleDeleteDebt}
+                  loading={loading}
+                />
+              )}
+            </CardContent>
+          </Card>
 
-        <DeleteDebtDialog
-          open={deleteConfirmOpen}
-          onOpenChange={setDeleteConfirmOpen}
-          debt={debtToDelete}
-          onConfirm={confirmDelete}
-          isDeleting={isDeleting}
-        />
+          <EditDebtDialog
+            open={editDialogOpen}
+            onOpenChange={setEditDialogOpen}
+            debt={editingDebt}
+            onSave={handleEditSave}
+          />
+
+          <DeleteDebtDialog
+            open={deleteConfirmOpen}
+            onOpenChange={setDeleteConfirmOpen}
+            debt={debtToDelete}
+            onConfirm={confirmDelete}
+            isDeleting={isDeleting}
+          />
+        </div>
       </>
     </ProtectedRoute>
   );
 };
 
 export default Debts;
+

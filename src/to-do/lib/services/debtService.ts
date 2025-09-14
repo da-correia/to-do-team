@@ -2,14 +2,14 @@ import { supabase } from "../supabaseClient";
 
 export type Debt = {
   id: number | null;
-  user_id: string | null; // Changed to string for Supabase UUID
+  user_id: string | null; // Supabase UUID
   debt_name: string | null;
   type: string | null;
   balance: number | null;
   interest_rate: number | null;
   minimum_payment: number | null;
-  due_date: Date | null;
-  isActive: boolean | null;
+  due_date: string | null; // Keep as string to match DB
+  is_active: boolean | null;
   created_at: string | null;
   updated_at: string | null;
 };
@@ -25,7 +25,6 @@ export type NewDebt = {
 
 export const debtService = {
   create: async (debtData: NewDebt) => {
-    // Get current user
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -34,7 +33,8 @@ export const debtService = {
     const newDebt = {
       ...debtData,
       user_id: user.id,
-      due_date: debtData.due_date || new Date(),
+      due_date: debtData.due_date?.toISOString() || new Date().toISOString(),
+      is_active: true,
     };
 
     const { data, error } = await supabase
@@ -43,19 +43,15 @@ export const debtService = {
       .select()
       .single();
 
-    if (error) {
-      throw new Error(error.message);
-    }
+    if (error) throw new Error(error.message);
 
     return data;
   },
 
   getByUserId: async () => {
-    // Get current user
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    console.log("Current user:", user);
     if (!user) throw new Error("User not authenticated");
 
     const { data, error } = await supabase
@@ -64,35 +60,36 @@ export const debtService = {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
-    if (error) {
-      throw new Error(error.message);
-    }
+    if (error) throw new Error(error.message);
 
     return data;
   },
 
   getUpcomingDebts: async () => {
-    // Get current user
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    console.log("Current user:", user);
     if (!user) throw new Error("User not authenticated");
 
-    const { data, error } = await supabase
-    .from("debt")
-    .select("*")
-    .eq("user_id", user.id)
-    .gte("due_date", today)
-    .lte("due_date", next7DaysStr)
-    .order("due_date", { ascending: true });
+    const today = new Date().toISOString().split("T")[0];
+    const next7Days = new Date();
+    next7Days.setDate(next7Days.getDate() + 7);
+    const next7DaysStr = next7Days.toISOString().split("T")[0];
 
-    if (error) throw error;
+    const { data, error } = await supabase
+      .from("debt")
+      .select("*")
+      .eq("user_id", user.id)
+      .gte("due_date", today)
+      .lte("due_date", next7DaysStr)
+      .order("due_date", { ascending: true });
+
+    if (error) throw new Error(error.message);
+
     return data;
   },
 
   delete: async (id: number) => {
-    // Get current user
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -102,24 +99,21 @@ export const debtService = {
       .from("debt")
       .delete()
       .eq("id", id)
-      .eq("user_id", user.id); // Ensure user can only delete their own debts
+      .eq("user_id", user.id);
 
-    if (error) {
-      throw new Error(error.message);
-    }
+    if (error) throw new Error(error.message);
+
     return data;
   },
 
   update: async (id: number, updatedData: Partial<Debt>) => {
-    // Get current user
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) throw new Error("User not authenticated");
 
-    // Remove user_id from update data to prevent changing ownership
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { user_id, ...dataToUpdate } = updatedData;
+    // Exclude user_id to prevent ownership changes
+    const { user_id, id: _id, ...dataToUpdate } = updatedData;
 
     const { data, error } = await supabase
       .from("debt")
@@ -128,12 +122,12 @@ export const debtService = {
         updated_at: new Date().toISOString(),
       })
       .eq("id", id)
-      .eq("user_id", user.id) // Ensure user can only update their own debts
-      .select();
+      .eq("user_id", user.id)
+      .select()
+      .single();
 
-    if (error) {
-      throw new Error(error.message);
-    }
+    if (error) throw new Error(error.message);
+
     return data;
   },
 };
