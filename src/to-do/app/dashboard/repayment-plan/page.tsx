@@ -47,7 +47,7 @@ const RepaymentPlanPage: React.FC = () => {
   const fetchSummary = async () => {
     setLoading(true);
     try {
-      const data = await RepaymentPlanService.getPlanSummary(1, daysFilter, {
+      const data = await RepaymentPlanService.getPlanSummary('6382e9ca-9d30-438d-9530-87aea3353d38', daysFilter, {
         type: typeFilter,
       });
 

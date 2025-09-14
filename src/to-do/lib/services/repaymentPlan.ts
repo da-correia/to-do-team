@@ -11,7 +11,7 @@ interface DebtFilter {
 export const RepaymentPlanService = {
 
     // Gets The Plan
-    getPlanSummary: async (userId: number, projectionDays = 30, filter: DebtFilter = {}) => {
+    getPlanSummary: async (userId: string, projectionDays = 30, filter: DebtFilter = {}) => {
         let query = supabase
             .from("debt")
             .select("id, balance, interest_rate, minimum_payment, type, due_date")
