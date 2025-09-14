@@ -71,6 +71,26 @@ export const debtService = {
     return data;
   },
 
+  getUpcomingDebts: async () => {
+    // Get current user
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    console.log("Current user:", user);
+    if (!user) throw new Error("User not authenticated");
+
+    const { data, error } = await supabase
+    .from("debt")
+    .select("*")
+    .eq("user_id", user.id)
+    .gte("due_date", today)
+    .lte("due_date", next7DaysStr)
+    .order("due_date", { ascending: true });
+
+    if (error) throw error;
+    return data;
+  },
+
   delete: async (id: number) => {
     // Get current user
     const {
